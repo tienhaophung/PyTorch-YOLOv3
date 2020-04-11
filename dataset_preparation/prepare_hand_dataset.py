@@ -127,6 +127,9 @@ def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, dest_labe
 
         # Open frame_label_file
         label_file_obj = open(frame_label_file, "wt")
+        
+        # Save img_id to data_file
+        data_file_obj.write(dest_images_dir+'/'+dir+'_'+tail+'\n')
 
         img_height, img_width = img.shape[:-1]
 
@@ -177,8 +180,6 @@ def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, dest_labe
 
                 # Save labelrow to label_file
                 label_file_obj.write(f"{labelrow[0]} {labelrow[1]} {labelrow[2]} {labelrow[3]} {labelrow[4]}\n")
-                # Save img_id to data_file
-                data_file_obj.write(dest_images_dir+'/'+dir+'_'+tail+'\n')
 
 
             cv2.polylines(img, [pst], True, (0, 255, 255), 1)
