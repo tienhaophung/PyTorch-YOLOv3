@@ -52,10 +52,10 @@ def list_image_paths_in_dir(base_path, dir):
     - image_path_array (list): a list of image paths in given dir.
     '''
     image_path_array = []
-    for root, dirs, filenames in os.walk(base_path + dir):
+    for root, dirs, filenames in os.walk(base_path + '/' + dir):
         for f in filenames:
             if(f.split(".")[1] == "jpg"):
-                img_path = base_path + dir + "/" + f
+                img_path = osp.join(root, f)
                 image_path_array.append(img_path)
 
     #sort image_path_array to ensure its in the low to high order expected in polygon.mat
@@ -80,7 +80,7 @@ def copy_rename_files(base_path, dst_path="data/custom/images"):
                 else:
                     break
 
-def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
+def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, label_file_obj):
     '''
     Get bounding boxs and visualize them on frames to get more intuition.
     Also, save these bboxs to label_file with following [label_idx, x_center, y_center, box_width, box_height] on each single line.
@@ -91,13 +91,14 @@ def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
     ---
     - base_path: base path of data
     - dir: a particular directory of images
+    - dest_images_dir: destination directory of images folder
     - data_file_obj: file object to save image paths
     - label_file_obj: file object to save labels
     '''
     image_path_array = list_image_paths_in_dir(base_path, dir)
+    # print(image_path_array)
 
-    boxes = loadmat(
-        base_path + dir + "/polygons.mat")
+    boxes = loadmat(osp.join(base_path, dir, "polygons.mat"))
 
     # there are 100 of these per folder in the egohands dataset
     polygons = boxes["polygons"][0]
@@ -109,13 +110,14 @@ def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
     for frame_poly in polygons:
         index = 0
 
-        img_id = image_path_array[pointindex]
+        img_id = image_path_array[pointindex] # images in base_path
         img = cv2.imread(img_id)
 
         # img_params = {}
         # img_params["width"] = np.size(img, 1)
         # img_params["height"] = np.size(img, 0)
         head, tail = os.path.split(img_id)
+        # video_name = osp.split(head)[1]
         # img_params["filename"] = tail
         # img_params["path"] = os.path.abspath(img_id)
         # img_params["type"] = "train"
@@ -146,6 +148,8 @@ def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
                     max_y = y if (y > max_y) else max_y
                     min_y = y if (y < min_y) else min_y
                     # print(index, "====", len(point))
+
+                    # Store point of polygons for plotting
                     appeno = np.array([[x, y]])
                     pst = np.append(pst, appeno, axis=0)
                     cv2.putText(img, ".", (x, y), font, 0.7,
@@ -166,9 +170,9 @@ def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
                 labelrow = [0, center_x/img_width, center_y/img_height, box_w/img_width, box_h/img_height]
 
                 # Save labelrow to label_file
-                label_file_obj.write(f"{labelrow[0]} {labelrow[1]} {labelrow[2]} {labelrow[3]} {labelrow[4]}")
+                label_file_obj.write(f"{labelrow[0]} {labelrow[1]} {labelrow[2]} {labelrow[3]} {labelrow[4]}\n")
                 # Save img_id to data_file
-                data_file_obj.write(img_id)
+                data_file_obj.write(dest_images_dir+'/'+dir+'_'+tail+'\n')
 
 
             cv2.polylines(img, [pst], True, (0, 255, 255), 1)
@@ -178,7 +182,7 @@ def get_bbox_visualize(base_path, dir, data_file_obj, label_file_obj):
         cv2.putText(img, "DIR : " + dir + " - " + tail, (20, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (77, 255, 9), 2)
         cv2.imshow('Verifying annotation ', img)
-        cv2.waitKey(2)  # close window when a key press is detected
+        cv2.waitKey(1)  # close window when a key press is detected
 
 def split_dataset_x_save_files(base_path, dst_path):
     '''
@@ -226,14 +230,14 @@ def split_dataset_x_save_files(base_path, dst_path):
     # print(shuffe_indices[-num_test_videos:])
 
     video_dataset = {'train': train_videos,
-                    'val': val_videos,
+                    'valid': val_videos,
                     'test': test_videos}
 
-    # dst_image_dir = dst_path + 'images'
+    dst_image_dir = dst_path + 'images'
     dst_label_dir = dst_path + 'labels'
     for name_set, video_list in video_dataset.items():
         label_file = dst_label_dir + '/' + name_set + '.txt'
-        data_file = dst_path + '/' + name_set + '.txt'
+        data_file = dst_path + name_set + '.txt'
 
         print("data_file:", data_file)
         print("label_file:", label_file)
@@ -242,12 +246,12 @@ def split_dataset_x_save_files(base_path, dst_path):
         data_file_obj = open(data_file, "wt")
 
         for video_name in video_list:
-            get_bbox_visualize(base_path, video_name, data_file_obj, label_file_obj)
+            print("Video_name:", video_name)
+            get_bbox_visualize(base_path, video_name, dst_image_dir, data_file_obj, label_file_obj)
 
         # Close files
         label_file_obj.close()
         data_file_obj.close()
-            
 
 
 def main(args):
