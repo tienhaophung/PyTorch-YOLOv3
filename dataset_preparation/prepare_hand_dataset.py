@@ -80,12 +80,12 @@ def copy_rename_files(base_path, dst_path="data/custom/images"):
                 else:
                     break
 
-def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, label_file_obj):
+def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, dest_label_dir):
     '''
     Get bounding boxs and visualize them on frames to get more intuition.
     Also, save these bboxs to label_file with following [label_idx, x_center, y_center, box_width, box_height] on each single line.
     All coordinates must be scaled to [0, 1] and the label_idx should be zero-indexed which corresponds to the row of classes.names.
-    Besides, every row in anotation file (i.g. label_file) should appropriate to every image path on each row of data_file. 
+    Besides, each image in data_file should include appropriate a label_file. 
 
     Args:
     ---
@@ -93,7 +93,7 @@ def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, label_fil
     - dir: a particular directory of images
     - dest_images_dir: destination directory of images folder
     - data_file_obj: file object to save image paths
-    - label_file_obj: file object to save labels
+    - dest_label_dir: destination dir to store label files. 
     '''
     image_path_array = list_image_paths_in_dir(base_path, dir)
     # print(image_path_array)
@@ -121,6 +121,12 @@ def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, label_fil
         # img_params["filename"] = tail
         # img_params["path"] = os.path.abspath(img_id)
         # img_params["type"] = "train"
+
+        frame_label_file = dest_label_dir + '/' + dir + '_' + tail.split('.')[0] + '.txt'
+        print("label_file:", frame_label_file)
+
+        # Open frame_label_file
+        label_file_obj = open(frame_label_file, "wt")
 
         img_height, img_width = img.shape[:-1]
 
@@ -184,6 +190,9 @@ def get_bbox_visualize(base_path, dir, dest_images_dir, data_file_obj, label_fil
         cv2.imshow('Verifying annotation ', img)
         cv2.waitKey(1)  # close window when a key press is detected
 
+        # Close label_file
+        label_file_obj.close()
+
 def split_dataset_x_save_files(base_path, dst_path):
     '''
     Split image dataset into train/val/test base on number of videos. 
@@ -236,21 +245,17 @@ def split_dataset_x_save_files(base_path, dst_path):
     dst_image_dir = dst_path + 'images'
     dst_label_dir = dst_path + 'labels'
     for name_set, video_list in video_dataset.items():
-        label_file = dst_label_dir + '/' + name_set + '.txt'
         data_file = dst_path + name_set + '.txt'
 
         print("data_file:", data_file)
-        print("label_file:", label_file)
 
-        label_file_obj = open(label_file, "wt")
         data_file_obj = open(data_file, "wt")
 
         for video_name in video_list:
             print("Video_name:", video_name)
-            get_bbox_visualize(base_path, video_name, dst_image_dir, data_file_obj, label_file_obj)
+            get_bbox_visualize(base_path, video_name, dst_image_dir, data_file_obj, dst_label_dir)
 
         # Close files
-        label_file_obj.close()
         data_file_obj.close()
 
 
