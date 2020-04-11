@@ -9,4 +9,9 @@ data/coco
 backup
 weights/*.weights
 __pycache__
+.vscode
 checkpoints
+
+
+# images
+*.jpg
