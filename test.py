@@ -75,6 +75,7 @@ if __name__ == "__main__":
 
     data_config = parse_data_config(opt.data_config)
     valid_path = data_config["valid"]
+    test_path = data_config["test"]
     class_names = load_classes(data_config["names"])
 
     # Initiate model
@@ -85,21 +86,25 @@ if __name__ == "__main__":
     else:
         # Load checkpoint weights
         model.load_state_dict(torch.load(opt.weights_path))
+    
+    model.eval()
 
-    print("Compute mAP...")
+    for set_path in [valid_path, test_path]:
+        print("{:=^70}".format(set_path))
+        print("Compute mAP...")
 
-    precision, recall, AP, f1, ap_class = evaluate(
-        model,
-        path=valid_path,
-        iou_thres=opt.iou_thres,
-        conf_thres=opt.conf_thres,
-        nms_thres=opt.nms_thres,
-        img_size=opt.img_size,
-        batch_size=8,
-    )
+        precision, recall, AP, f1, ap_class = evaluate(
+            model,
+            path= set_path, #valid_path,
+            iou_thres=opt.iou_thres,
+            conf_thres=opt.conf_thres,
+            nms_thres=opt.nms_thres,
+            img_size=opt.img_size,
+            batch_size=8,
+        )
 
-    print("Average Precisions:")
-    for i, c in enumerate(ap_class):
-        print(f"+ Class '{c}' ({class_names[c]}) - AP: {AP[i]}")
+        print("Average Precisions:")
+        for i, c in enumerate(ap_class):
+            print(f"+ Class '{c}' ({class_names[c]}) - AP: {AP[i]}")
 
-    print(f"mAP: {AP.mean()}")
+        print(f"mAP: {AP.mean()}")
